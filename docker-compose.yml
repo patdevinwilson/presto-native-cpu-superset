@@ -4,48 +4,43 @@ networks:
 
 services:
   presto:
-    image: prestodb/presto:latest # Use the official Java Presto image for the coordinator
+    # FIX: Use the actual Presto server image
+    image: prestodb/presto:latest
     container_name: presto-coordinator
     ports:
-      - "8080:8080" # Presto UI and API
+      - "8080:8080"
     volumes:
-      - ./presto_config/config.properties:/opt/presto-server/etc/config.properties:ro
-      - ./presto_config/node.properties:/opt/presto-server/etc/node.properties:ro
-      - ./presto_config/jvm.config:/opt/presto-server/etc/jvm.config:ro
-      - ./presto_config/log.properties:/opt/presto-server/etc/log.properties
-      - ./catalog:/opt/presto-server/etc/catalog
-      - ./data:/opt/presto-server/data
-
-    # environment:
-      # Optional: Set Presto version if you know it, though 'latest' is fine
-      # - PRESTO_VERSION=0.293 # Example
+      # Ensure these config files are correct for the new image
+      - ./presto_config/config.properties:/etc/presto/config.properties:ro
+      - ./presto_config/node.properties:/etc/presto/node.properties:ro
+      - ./presto_config/jvm.config:/etc/presto/jvm.config:ro
+      - ./presto_config/log.properties:/etc/presto/log.properties
+      - ./catalog:/etc/presto/catalog
+      - ./data:/data/presto
     networks:
       - presto-net
-    restart: unless-stopped # Keep coordinator running
+    restart: unless-stopped
 
   presto-native-worker:
-    #image: prestodb/presto-native:0.293
-    image: presto/prestissimo-runtime:centos9
+    image: prestodb/presto-native:0.293
     platform: linux/amd64
     container_name: presto-native-worker-cpu
     ports:
-      - "8081:8081" # Expose worker port for debugging
+      - "8081:8081"
     volumes:
-      # Mount the worker-specific config for Prestissimo
       - ./presto_config/worker-node.properties:/opt/presto-server/etc/node.properties 
-      - ./presto_config/worker-config.properties:/opt/presto-server/etc/config.properties # Worker config
-      #- ./catalog:/opt/presto-server/etc/catalog
-      # Presto Native needs its own data dir, make it a volume if you want persistence
+      - ./presto_config/worker-config.properties:/opt/presto-server/etc/config.properties
       - presto_native_data:/data/presto
     networks:
       - presto-net
     command: /velox/_build/release/presto_cpp/main/presto_server --v=1 --logtostderr=1 --etc_dir=/opt/presto-server/etc
-    restart: unless-stopped # Keep worker running
+    restart: unless-stopped
     depends_on:
       - presto
 
   superset-db:
     image: postgres:13
+    container_name: superset-db
     networks:
       - presto-net
     environment:
@@ -57,35 +52,25 @@ services:
     restart: unless-stopped
 
   superset:
-    image: apache/superset:latest
+    # This tells Docker to build the image from your Dockerfile
+    build: .
+    container_name: superset-app
     ports:
-      - "8089:8088"
+      - "8088:8088"
     networks:
       - presto-net
     environment:
+      - DATABASE_URL=postgresql://superset:superset@superset-db:5432/superset
       - SUPERSET_CONFIG_PATH=/app/superset_config.py
-      - SUPERSET_SECRET_KEY=your_secret_key_here
-      - DATABASE_DB=superset
-      - DATABASE_HOST=superset-db
-      - DATABASE_PASSWORD=superset
-      - DATABASE_USER=superset
     volumes:
       - ./superset_config.py:/app/superset_config.py:ro
       - superset_logs:/app/logs
     depends_on:
       - superset-db
       - presto
-    command: >
-      bash -c "
-        pip install pyhive[presto] psycopg2-binary &&
-        superset fab create-admin --username admin --firstname Admin --lastname User --email admin@superset.com --password admin &&
-        superset db upgrade &&
-        superset init &&
-        superset run -h 0.0.0.0 -p 8088
-      "
     restart: unless-stopped
 
 volumes:
-  presto_native_data: {} # Defines a named volume for the Prestissimo worker's data
+  presto_native_data:
   superset_db_data:
   superset_logs:
