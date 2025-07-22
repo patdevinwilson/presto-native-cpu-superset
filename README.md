@@ -6,6 +6,7 @@ For Superset, you made to set a password
 docker exec -it superset-app superset fab create-admin   --username admin   --firstname Admin   --lastname User   --email admin@example.com   --password admin
 
 **Best Practice to Upgrade**
+
 docker exec -it superset-app superset db upgrade
 
 docker exec -it superset-app superset db upgrade
