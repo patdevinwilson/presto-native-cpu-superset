@@ -2,7 +2,7 @@ Need to also create a data directory in the root of the project with the followi
 
 Can deploy via docker-compose up -d --build
 
-For Superset, you made to set a password
+For Superset, you might need to set a password
 docker exec -it superset-app superset fab create-admin   --username admin   --firstname Admin   --lastname User   --email admin@example.com   --password admin
 
 **Best Practice to Upgrade**
