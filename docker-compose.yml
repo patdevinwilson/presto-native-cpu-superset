@@ -4,8 +4,8 @@ networks:
 
 services:
   presto:
-    # FIX: Use the actual Presto server image
-    image: prestodb/presto:latest
+    # Use the original version but with better configuration
+    image: prestodb/presto:0.293
     container_name: presto-coordinator
     ports:
       - "8080:8080"
@@ -30,10 +30,11 @@ services:
     volumes:
       - ./presto_config/worker-node.properties:/opt/presto-server/etc/node.properties 
       - ./presto_config/worker-config.properties:/opt/presto-server/etc/config.properties
+      - ./presto_config/velox.properties:/opt/presto-server/etc/velox.properties
       - presto_native_data:/data/presto
     networks:
       - presto-net
-    command: /velox/_build/release/presto_cpp/main/presto_server --v=1 --logtostderr=1 --etc_dir=/opt/presto-server/etc
+    command: ["/velox/_build/release/presto_cpp/main/presto_server", "--etc_dir=/opt/presto-server/etc", "--system-memory-gb=50", "--query.max-memory-per-node=40GB"]
     restart: unless-stopped
     depends_on:
       - presto

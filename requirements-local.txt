@@ -1,2 +1,4 @@
 psycopg2-binary
-
+presto-python-client
+pandas
+matplotlib
