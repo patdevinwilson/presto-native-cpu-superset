@@ -4,7 +4,7 @@
 select
         cntrycode,
         count(*) as numcust,
-        sum(c.acctbal) as totacctbal
+        sum(acctbal) as totacctbal
 from
         (
                 select

@@ -84,8 +84,8 @@ def plot_results(df):
     df_pivot.plot(kind='bar', stacked=True, ax=ax)
 
     # Add labels to each segment
-    for c in ax.containers:
-        labels = [f'{v.get_text().split(".")[0]}\n({df_pivot.columns[i]})' for i, v in enumerate(c)]
+    for i, c in enumerate(ax.containers):
+        labels = [f'{df_pivot.iloc[j, i]:.2f}\n({df_pivot.columns[i]})' for j in range(len(df_pivot))]
         ax.bar_label(c, labels=labels, label_type='center', color='white', weight='bold')
     
     ax.set_title('TPC-H Query Execution Time by Schema', fontsize=16)

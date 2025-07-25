@@ -4,13 +4,12 @@ networks:
 
 services:
   presto:
-    # FIX: Use the actual Presto server image
-    image: prestodb/presto:0.293
+    # Use the latest Presto image as requested
+    image: prestodb/presto:latest
     container_name: presto-coordinator
     ports:
       - "8080:8080"
     volumes:
-      # Ensure these config files are correct for the new image
       - ./presto_config/config.properties:/etc/presto/config.properties:ro
       - ./presto_config/node.properties:/etc/presto/node.properties:ro
       - ./presto_config/jvm.config:/etc/presto/jvm.config:ro
@@ -20,24 +19,6 @@ services:
     networks:
       - presto-net
     restart: unless-stopped
-
-  presto-native-worker:
-    image: prestodb/presto-native:0.293
-    platform: linux/amd64
-    container_name: presto-native-worker-cpu
-    ports:
-      - "8081:8081"
-    volumes:
-      - ./presto_config/worker-node.properties:/opt/presto-server/etc/node.properties 
-      - ./presto_config/worker-config.properties:/opt/presto-server/etc/config.properties
-      - ./presto_config/velox.properties:/opt/presto-server/etc/velox.properties
-      - presto_native_data:/data/presto
-    networks:
-      - presto-net
-    command: ["/velox/_build/release/presto_cpp/main/presto_server", "--etc_dir=/opt/presto-server/etc", "--system-memory-gb=50", "--query.max-memory-per-node=40GB"]
-    restart: unless-stopped
-    depends_on:
-      - presto
 
   superset-db:
     image: postgres:13
@@ -53,24 +34,21 @@ services:
     restart: unless-stopped
 
   superset:
-    # This tells Docker to build the image from your Dockerfile
-    build: .
-    container_name: superset-app
+    image: apache/superset:latest
+    container_name: superset
     ports:
       - "8088:8088"
     networks:
       - presto-net
     environment:
-      - DATABASE_URL=postgresql://superset:superset@superset-db:5432/superset
-      - SUPERSET_CONFIG_PATH=/app/superset_config.py
+      SUPERSET_SECRET_KEY: your-secret-key-here
+      SUPERSET_DB_URI: postgresql://superset:superset@superset-db:5432/superset
     volumes:
-      - ./superset_config.py:/app/superset_config.py:ro
-      - superset_logs:/app/logs
+      - superset_data:/app/superset_home
     depends_on:
       - superset-db
-      - presto
     restart: unless-stopped
 
 volumes:
-  presto_native_data:
-  superset_db_data:  superset_logs:
+  superset_db_data:
+  superset_data:
