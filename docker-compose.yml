@@ -4,7 +4,7 @@ networks:
 
 services:
   presto:
-    # Use the original version but with better configuration
+    # FIX: Use the actual Presto server image
     image: prestodb/presto:0.293
     container_name: presto-coordinator
     ports:
@@ -73,5 +73,4 @@ services:
 
 volumes:
   presto_native_data:
-  superset_db_data:
-  superset_logs:
+  superset_db_data:  superset_logs:
